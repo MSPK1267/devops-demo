@@ -1,0 +1,39 @@
+name: CI/CD Demo
+
+# Run every time code is pushed to the main branch
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  # STEP 1 - CI: automatically check the code
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check the page is not empty
+        run: test -s index.html
+      - name: Check the page has a title
+        run: grep -q "<title>" index.html
+
+  # STEP 2 - CD: only runs if the tests above passed
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+      - id: deployment
+        uses: actions/deploy-pages@v4
